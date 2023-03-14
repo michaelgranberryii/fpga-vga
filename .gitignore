@@ -1,4 +1,4 @@
 
-sp23-e524-lab7-vga-michaelgranberryii/hardware/VGA-lab/build/*
-!sp23-e524-lab7-vga-michaelgranberryii/hardware/VGA-lab/build/.keep
-sp23-e524-lab7-vga-michaelgranberryii/hardware/Zybo-Z7
+hardware/VGA-lab/build/*
+!hardware/VGA-lab/build/.keep
+hardware/Zybo-Z7
