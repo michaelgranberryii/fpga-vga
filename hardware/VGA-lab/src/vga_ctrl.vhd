@@ -18,8 +18,8 @@ entity top is
             VGA_HS_O : out  STD_LOGIC;
             VGA_VS_O : out  STD_LOGIC;
             VGA_R : out  STD_LOGIC_VECTOR (3 downto 0);
-            VGA_B : out  STD_LOGIC_VECTOR (3 downto 0);
-            VGA_G : out  STD_LOGIC_VECTOR (3 downto 0));
+            VGA_G : out  STD_LOGIC_VECTOR (3 downto 0);
+            VGA_B : out  STD_LOGIC_VECTOR (3 downto 0));
 end top;
 
 architecture Behavioral of top is
@@ -133,18 +133,18 @@ signal vga_red : std_logic_vector(3 downto 0);
 signal vga_green : std_logic_vector(3 downto 0);
 signal vga_blue : std_logic_vector(3 downto 0);
 
---Moving Box constants
-constant BOX_WIDTH : natural := 8;
+--Moving Ball constants
+constant BOX_WIDTH : natural := 20;
 constant BOX_CLK_DIV : natural := 1000000; --MAX=(2^25 - 1)
 
-constant BOX_X_MAX : natural := (512 - BOX_WIDTH);
+constant BOX_X_MAX : natural := (1920 - BOX_WIDTH);
 constant BOX_Y_MAX : natural := (FRAME_HEIGHT - BOX_WIDTH);
 
 constant BOX_X_MIN : natural := 0;
-constant BOX_Y_MIN : natural := 256;
+constant BOX_Y_MIN : natural := 0; --256 --0
 
 constant BOX_X_INIT : std_logic_vector(11 downto 0) := x"000";
-constant BOX_Y_INIT : std_logic_vector(11 downto 0) := x"190"; --400
+constant BOX_Y_INIT : std_logic_vector(11 downto 0) := x"190"; --400 -- x"190"
 
 signal box_x_reg : std_logic_vector(11 downto 0) := BOX_X_INIT;
 signal box_x_dir : std_logic := '1';
@@ -155,12 +155,101 @@ signal box_cntr_reg : std_logic_vector(24 downto 0) := (others =>'0');
 signal update_box : std_logic;
 signal pixel_in_box : std_logic;
 
+--Moving Shape constants
+constant BOX_WIDTH2 : natural := 28;
+constant BOX_CLK_DIV2 : natural := 1000000; --MAX=(2^25 - 1)
+
+constant BOX_X_MAX2 : natural := (1920 - BOX_WIDTH2);
+constant BOX_Y_MAX2 : natural := (FRAME_HEIGHT - BOX_WIDTH2);
+
+constant BOX_X_MIN2 : natural := 0;
+constant BOX_Y_MIN2 : natural := 0; --256 --0
+
+constant BOX_X_INIT2 : std_logic_vector(11 downto 0) := x"000";
+constant BOX_Y_INIT2 : std_logic_vector(11 downto 0) := x"190"; --400 -- x"190"
+
+signal box_x_reg2 : std_logic_vector(11 downto 0) := BOX_X_INIT2;
+signal box_x_dir2 : std_logic := '1';
+signal box_y_reg2 : std_logic_vector(11 downto 0) := BOX_Y_INIT2;
+signal box_y_dir2 : std_logic := '1';
+signal box_cntr_reg2 : std_logic_vector(24 downto 0) := (others =>'0');
+
+signal update_box2 : std_logic;
+signal pixel_in_box2 : std_logic;
+
 --Added for lab
 --constant
-constant FirstH_Q : natural := FRAME_WIDTH/3;
-constant SecondH_Q : natural := (FRAME_WIDTH/3)*2;
-constant ThirdH_Q : natural := FRAME_WIDTH;
-constant OneEigth_H : natural := FRAME_WIDTH/8;
+constant Third_H : natural := FRAME_WIDTH/3;
+constant Sixth_H : natural := FRAME_WIDTH/6;
+constant Eigth_H : natural := FRAME_WIDTH/8;
+constant Fourth_H : natural := FRAME_WIDTH/4;
+
+--Gradient colors
+signal red_cntr_reg : integer;
+signal green_cntr_reg : integer;
+signal blue_cntr_reg : integer;
+
+type rom_type is array ( 0 to 19) of std_logic_vector( 19 downto 0);
+-- ROM definition
+constant BALL_ROM: rom_type :=
+  (
+  "00000111111111100000" ,
+  "00001111111111110000" ,
+  "00111111111111111100" ,
+  "00111111111111111100" ,
+  "01111111111111111110" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "11111111111111111111" ,
+  "01111111111111111110" ,
+  "00111111111111111100" ,
+  "00111111111111111100" ,
+  "00001111111111110000" ,
+  "00000111111111100000"
+  );
+
+  type rom_type_2 is array ( 0 to 27) of std_logic_vector(0 to 27);
+  -- ROM definition
+  constant img: rom_type_2 :=
+  (
+  "0000000000000000000000000000" ,
+  "0000000000000000000000000000" ,
+  "0000000000000000000000000000" ,
+  "0000000000000000000000000000" ,
+  "0000000000000000000000000000" ,
+  "0000000000001111111111110000" ,
+  "0000000011111111111111110000" ,
+  "0000000111111111111111100000" ,
+  "0000000111111111110000000000" ,
+  "0000000011111110110000000000" ,
+  "0000000001111100000000000000" ,
+  "0000000000011110000000000000" ,
+  "0000000000011110000000000000" ,
+  "0000000000001111110000000000" ,
+  "0000000000000111111000000000" ,
+  "0000000000000011111100000000" ,
+  "0000000000000001111100000000" ,
+  "0000000000000000011110000000" ,
+  "0000000000000011111110000000" ,
+  "0000000000001111111100000000" ,
+  "0000000000111111111000000000" ,
+  "0000000011111111110000000000" ,
+  "0000001111111111000000000000" ,
+  "0000111111111100000000000000" ,
+  "0000111111110000000000000000" ,
+  "0000000000000000000000000000" ,
+  "0000000000000000000000000000" ,
+  "0000000000000000000000000000" );
+
+signal img_point : std_logic;
+signal ball_point : std_logic;
 
 begin
   
@@ -191,29 +280,17 @@ clk_div_inst : clk_wiz_0
                   vga_blue <= (others => '0');
                   vga_green <= (others => '0');
 
-                -- green
-                when "0010" =>  
-                  vga_red <= (others => '0');
-                  vga_blue <= (others => '0');
-                  vga_green <= (others => '1');
-
-                -- blue
-                when "0011" =>  
-                  vga_red <= (others => '0');
-                  vga_blue <= (others => '1');
-                  vga_green <= (others => '0');
-
                 -- red green blue
-                when "0100" =>
-                     if (h_cntr_reg >= 0 and h_cntr_reg < FirstH_Q) then
+                when "0010" =>
+                     if (h_cntr_reg >= 0 and h_cntr_reg < Third_H) then
                         vga_red <= (others => '1');
                         vga_blue <= (others => '0');
                         vga_green <= (others => '0');
-                    elsif (h_cntr_reg >= FirstH_Q and h_cntr_reg < SecondH_Q) then
+                    elsif (h_cntr_reg >= Third_H and h_cntr_reg < 2*Third_H) then
                         vga_red <= (others => '0');
                         vga_blue <= (others => '0');
                         vga_green <= (others => '1');
-                    elsif (h_cntr_reg >= SecondH_Q and h_cntr_reg < ThirdH_Q) then
+                    elsif (h_cntr_reg >= 2*Third_H and h_cntr_reg < 3*Third_H) then
                         vga_red <= (others => '0');
                         vga_blue <= (others => '1');
                         vga_green <= (others => '0');
@@ -224,50 +301,50 @@ clk_div_inst : clk_wiz_0
                     end if;
 
                 -- CMYK and RGB and White
-                when "0101" =>
-                  if (h_cntr_reg >= 0 and h_cntr_reg < 1*OneEigth_H) then
+                when "0011" =>
+                  if (h_cntr_reg >= 0 and h_cntr_reg < 1*Eigth_H) then
                     -- white
                     vga_red <= (others => '1');
                     vga_green <= (others => '1');
                     vga_blue <= (others => '1');
 
-                  elsif (h_cntr_reg >= 1*OneEigth_H and h_cntr_reg < 2*OneEigth_H) then
+                  elsif (h_cntr_reg >= 1*Eigth_H and h_cntr_reg < 2*Eigth_H) then
                     -- yellow
                     vga_red <= (others => '1');
                     vga_green <= (others => '1');
                     vga_blue <= (others => '0');
 
-                  elsif (h_cntr_reg >= 2*OneEigth_H and h_cntr_reg < 3*OneEigth_H) then
+                  elsif (h_cntr_reg >= 2*Eigth_H and h_cntr_reg < 3*Eigth_H) then
                     -- cyan
                     vga_red <= (others => '0');
                     vga_green <= (others => '1');
                     vga_blue <= (others => '1');
 
-                  elsif (h_cntr_reg >= 3*OneEigth_H and h_cntr_reg < 4*OneEigth_H) then
+                  elsif (h_cntr_reg >= 3*Eigth_H and h_cntr_reg < 4*Eigth_H) then
                     -- green
                     vga_red <= (others => '0');
                     vga_green <= (others => '1');
                     vga_blue <= (others => '0');
 
-                  elsif (h_cntr_reg >= 4*OneEigth_H and h_cntr_reg < 5*OneEigth_H) then
+                  elsif (h_cntr_reg >= 4*Eigth_H and h_cntr_reg < 5*Eigth_H) then
                     -- magenta
                     vga_red <= (others => '1');
                     vga_green <= (others => '0');
                     vga_blue <= (others => '1');
 
-                  elsif (h_cntr_reg >= 5*OneEigth_H and h_cntr_reg < 6*OneEigth_H) then
+                  elsif (h_cntr_reg >= 5*Eigth_H and h_cntr_reg < 6*Eigth_H) then
                     -- red
                     vga_red <= (others => '1');
                     vga_green <= (others => '0');
                     vga_blue <= (others => '0');
 
-                  elsif (h_cntr_reg >= 6*OneEigth_H and h_cntr_reg < 7*OneEigth_H) then
+                  elsif (h_cntr_reg >= 6*Eigth_H and h_cntr_reg < 7*Eigth_H) then
                     -- blue
                     vga_red <= (others => '0');
                     vga_green <= (others => '0');
                     vga_blue <= (others => '1');
 
-                  elsif (h_cntr_reg >= 7*OneEigth_H and h_cntr_reg < 8*OneEigth_H) then
+                  elsif (h_cntr_reg >= 7*Eigth_H and h_cntr_reg < 8*Eigth_H) then
                     -- black
                     vga_red <= (others => '0');
                     vga_green <= (others => '0');
@@ -281,50 +358,50 @@ clk_div_inst : clk_wiz_0
                   end if;
 
                 -- 8 shades of gray
-                when "0110" =>
-                  if (h_cntr_reg >= 0 and h_cntr_reg < 1*OneEigth_H) then
+                when "0100" =>
+                  if (h_cntr_reg >= 0 and h_cntr_reg < 1*Eigth_H) then
                     -- white
                     vga_red <= (others => '1');
                     vga_green <= (others => '1');
                     vga_blue <= (others => '1');
 
-                  elsif (h_cntr_reg >= 1*OneEigth_H and h_cntr_reg < 2*OneEigth_H) then
+                  elsif (h_cntr_reg >= 1*Eigth_H and h_cntr_reg < 2*Eigth_H) then
                     -- gray 1
                     vga_red <= "1110";
                     vga_green <= "1110";
                     vga_blue <= "1110";
 
-                  elsif (h_cntr_reg >= 2*OneEigth_H and h_cntr_reg < 3*OneEigth_H) then
+                  elsif (h_cntr_reg >= 2*Eigth_H and h_cntr_reg < 3*Eigth_H) then
                     -- gray 2
                     vga_red <= "1100";
                     vga_green <= "1100";
                     vga_blue <= "1100";
 
-                  elsif (h_cntr_reg >= 3*OneEigth_H and h_cntr_reg < 4*OneEigth_H) then
+                  elsif (h_cntr_reg >= 3*Eigth_H and h_cntr_reg < 4*Eigth_H) then
                     -- gray 3
                     vga_red <= "1010";
                     vga_green <= "1010";
                     vga_blue <= "1010";
 
-                  elsif (h_cntr_reg >= 4*OneEigth_H and h_cntr_reg < 5*OneEigth_H) then
+                  elsif (h_cntr_reg >= 4*Eigth_H and h_cntr_reg < 5*Eigth_H) then
                     -- gray 4
                     vga_red <= "1000";
                     vga_green <= "1000";
                     vga_blue <= "1000";
 
-                  elsif (h_cntr_reg >= 5*OneEigth_H and h_cntr_reg < 6*OneEigth_H) then
+                  elsif (h_cntr_reg >= 5*Eigth_H and h_cntr_reg < 6*Eigth_H) then
                     -- gray 5
                     vga_red <= "0110";
                     vga_green <= "0110";
                     vga_blue <= "0110";
 
-                  elsif (h_cntr_reg >= 6*OneEigth_H and h_cntr_reg < 7*OneEigth_H) then
+                  elsif (h_cntr_reg >= 6*Eigth_H and h_cntr_reg < 7*Eigth_H) then
                     -- gray 6
                     vga_red <= "0010";
                     vga_green <= "0010";
                     vga_blue <= "0010";
 
-                  elsif (h_cntr_reg >= 7*OneEigth_H and h_cntr_reg < 8*OneEigth_H) then
+                  elsif (h_cntr_reg >= 7*Eigth_H and h_cntr_reg < 8*Eigth_H) then
                     -- black
                     vga_red <= (others => '0');
                     vga_green <= (others => '0');
@@ -335,9 +412,10 @@ clk_div_inst : clk_wiz_0
                   vga_red <= (others => '0');
                   vga_green <= (others => '0');
                   vga_blue <= (others => '0');
-                  end if;  
-                
-                when "0111" =>
+                  end if; 
+
+                -- Use btn to create different horizontal stripes
+                when "0101" =>
                   case btn is
                     when "0000" =>
                       vga_red <= h_cntr_reg(3 downto 0);
@@ -365,7 +443,8 @@ clk_div_inst : clk_wiz_0
                       vga_blue <= (others => '0');
                   end case;
                   
-                when "1000" =>
+                -- Use btn to create different vertical stripes
+                when "0110" =>
                   case btn is
                     when "0000" =>
                       vga_red <= v_cntr_reg(3 downto 0);
@@ -393,7 +472,8 @@ clk_div_inst : clk_wiz_0
                       vga_blue <= (others => '0');
                   end case;
 
-                when "1001" => 
+                -- create different size checker board pattern
+                when "0111" => 
                   case btn is
                     when "0000" =>
                       vga_red <= (others =>(v_cntr_reg(5) xor h_cntr_reg(5)));
@@ -421,7 +501,8 @@ clk_div_inst : clk_wiz_0
                       vga_blue <= (others => '0');
                   end case;
 
-                when "1010" => 
+                -- create checkerboard with inner repeat pattern  
+                when "1000" => 
                   case btn is
                     when "0000" =>
                       vga_red <= v_cntr_reg(6 downto 3) and h_cntr_reg(6 downto 3);
@@ -447,16 +528,27 @@ clk_div_inst : clk_wiz_0
                       vga_red <= (others => '0');
                       vga_green <= (others => '0');
                       vga_blue <= (others => '0');
-                  end case;
+                  end case;  
 
-                when "1110" =>
-                    -- show moving ball
-                    if pixel_in_box = '1' then
-                      vga_red <= (others => '1');
-                    else
-                      vga_red <= (others => '0');
-                    end if;
+                -- red ball
+                when "1001" =>
+                  -- show moving ball
+                  if pixel_in_box = '1' then
+                    vga_red <= (others => '1');
+                  else
+                    vga_red <= (others => '0');
+                  end if;
+                        
+                when "1010" =>
+                  -- show moving ball
+                  if pixel_in_box2 = '1' then
+                    vga_red <= (others => '1');
+                  else
+                    vga_red <= (others => '0');
+                  end if;
+
                 -- black
+                -- "1111"
                 when others =>
                   vga_red <= (others => '0');
                   vga_blue <= (others => '0');
@@ -466,31 +558,14 @@ clk_div_inst : clk_wiz_0
           vga_red <= (others => '0');
           vga_blue <= (others => '0');
           vga_green <= (others => '0'); 
+          
+          --Gradient colors
+          red_cntr_reg <= 0;
+          green_cntr_reg <= 0;
+          blue_cntr_reg <= 0;
         end if;
     end process;
-  
-  ----------------------------------------------------
-  -------         TEST PATTERN LOGIC           -------
-  ----------------------------------------------------
-
---   vga_red <= h_cntr_reg(5 downto 2) when (active = '1' and ((h_cntr_reg < 512 and v_cntr_reg < 256) and h_cntr_reg(8) = '1')) else
---               (others=>'1')         when (active = '1' and ((h_cntr_reg < 512 and not(v_cntr_reg < 256)) and not(pixel_in_box = '1'))) else
---               (others=>'1')         when (active = '1' and ((not(h_cntr_reg < 512) and (v_cntr_reg(8) = '1' and h_cntr_reg(3) = '1')) or
---                                           (not(h_cntr_reg < 512) and (v_cntr_reg(8) = '0' and v_cntr_reg(3) = '1')))) else
---               (others=>'0');
-                
---   vga_blue <= h_cntr_reg(5 downto 2) when (active = '1' and ((h_cntr_reg < 512 and v_cntr_reg < 256) and  h_cntr_reg(6) = '1')) else
---               (others=>'1')          when (active = '1' and ((h_cntr_reg < 512 and not(v_cntr_reg < 256)) and not(pixel_in_box = '1'))) else 
---               (others=>'1')          when (active = '1' and ((not(h_cntr_reg < 512) and (v_cntr_reg(8) = '1' and h_cntr_reg(3) = '1')) or
---                                            (not(h_cntr_reg < 512) and (v_cntr_reg(8) = '0' and v_cntr_reg(3) = '1')))) else
---               (others=>'0');  
-              
---   vga_green <= h_cntr_reg(5 downto 2) when (active = '1' and ((h_cntr_reg < 512 and v_cntr_reg < 256) and h_cntr_reg(7) = '1')) else
---               (others=>'1')           when (active = '1' and ((h_cntr_reg < 512 and not(v_cntr_reg < 256)) and not(pixel_in_box = '1'))) else 
---               (others=>'1')           when (active = '1' and ((not(h_cntr_reg < 512) and (v_cntr_reg(8) = '1' and h_cntr_reg(3) = '1')) or
---                                             (not(h_cntr_reg < 512) and (v_cntr_reg(8) = '0' and v_cntr_reg(3) = '1')))) else
---               (others=>'0');
-              
+             
 
  ------------------------------------------------------
  -------         MOVING BOX LOGIC                ------
@@ -541,11 +616,76 @@ clk_div_inst : clk_wiz_0
   update_box <= '1' when box_cntr_reg = (BOX_CLK_DIV - 1) else
                 '0';
                 
-  pixel_in_box <= '1' when (((h_cntr_reg >= box_x_reg) and (h_cntr_reg < (box_x_reg + BOX_WIDTH))) and
-                            ((v_cntr_reg >= box_y_reg) and (v_cntr_reg < (box_y_reg + BOX_WIDTH)))) else
-                  '0';
-                
+  ball_point <= BALL_ROM(conv_integer(v_cntr_reg(4 downto 0) - box_y_reg))(conv_integer(h_cntr_reg(4 downto 0) - box_x_reg))
+      when (((h_cntr_reg >= box_x_reg) and (h_cntr_reg < (box_x_reg + BOX_WIDTH))) and
+      ((v_cntr_reg >= box_y_reg) and (v_cntr_reg < (box_y_reg + BOX_WIDTH)))) else
+      '0';
+
+  pixel_in_box <= ball_point when (((h_cntr_reg >= box_x_reg) and (h_cntr_reg < (box_x_reg + BOX_WIDTH))) and
+      ((v_cntr_reg >= box_y_reg) and (v_cntr_reg < (box_y_reg + BOX_WIDTH)))) else
+      '0';
+
   
+                
+   ------------------------------------------------------
+ -------         MOVING Shape LOGIC                ------
+ ------------------------------------------------------
+ process (pxl_clk)
+ begin
+   if (rising_edge(pxl_clk)) then
+     if (update_box2 = '1') then
+       if (box_x_dir2 = '1') then
+         box_x_reg2 <= box_x_reg2 + 1;
+       else
+         box_x_reg2 <= box_x_reg2 - 1;
+       end if;
+       if (box_y_dir2 = '1') then
+         box_y_reg2 <= box_y_reg2 + 1;
+       else
+         box_y_reg2 <= box_y_reg2 - 1;
+       end if;
+     end if;
+   end if;
+ end process;
+     
+ process (pxl_clk)
+ begin
+   if (rising_edge(pxl_clk)) then
+     if (update_box2 = '1') then
+       if ((box_x_dir2 = '1' and (box_x_reg2 = BOX_X_MAX2 - 1)) or (box_x_dir2 = '0' and (box_x_reg2 = BOX_X_MIN2 + 1))) then
+         box_x_dir2 <= not(box_x_dir2);
+       end if;
+       if ((box_y_dir2 = '1' and (box_y_reg2 = BOX_Y_MAX2 - 1)) or (box_y_dir2 = '0' and (box_y_reg2 = BOX_Y_MIN2 + 1))) then
+         box_y_dir2 <= not(box_y_dir2);
+       end if;
+     end if;
+   end if;
+ end process;
+ 
+ process (pxl_clk)
+ begin
+   if (rising_edge(pxl_clk)) then
+     if (box_cntr_reg2 = (BOX_CLK_DIV2 - 1)) then
+       box_cntr_reg2 <= (others=>'0');
+     else
+       box_cntr_reg2 <= box_cntr_reg2 + 1;     
+     end if;
+   end if;
+ end process;
+ 
+ update_box2 <= '1' when box_cntr_reg2 = (BOX_CLK_DIV2 - 1) else
+               '0';
+               
+img_point <= img(conv_integer(v_cntr_reg(4 downto 0) - box_y_reg2))(conv_integer(h_cntr_reg(4 downto 0) - box_x_reg2))
+     when (((h_cntr_reg >= box_x_reg2) and (h_cntr_reg < (box_x_reg2 + BOX_WIDTH2))) and
+     ((v_cntr_reg >= box_y_reg2) and (v_cntr_reg < (box_y_reg2 + BOX_WIDTH2)))) else
+     '0';
+
+ pixel_in_box2 <= img_point when (((h_cntr_reg >= box_x_reg2) and (h_cntr_reg < (box_x_reg2 + BOX_WIDTH2))) and
+     ((v_cntr_reg >= box_y_reg2) and (v_cntr_reg < (box_y_reg2 + BOX_WIDTH2)))) else
+     '0';
+
+
  ------------------------------------------------------
  -------         SYNC GENERATION                 ------
  ------------------------------------------------------
