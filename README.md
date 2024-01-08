@@ -1,6 +1,6 @@
 # Project Title
 
-Zybo Z7-10 FPGA SoC Development Board:  VGA
+Zybo Z7-10 FPGA SoC Development Board:  VGA Controller
 
 ## Description
 
