@@ -6,6 +6,10 @@ Zybo Z7-10 FPGA SoC Development Board:  VGA Controller
 
 This project uses VHDL to implement a VGA controller on an FPGA and creates custom graphics to display on a VGA monitor. Ten different graphics are generated and selected using the switches on the Zybo Z7-10.
 
+## Demo Video
+
+[Demo on Youtube](https://youtu.be/0NX55eleK7o)
+
 ## Dependencies
 
 ### Hardware
